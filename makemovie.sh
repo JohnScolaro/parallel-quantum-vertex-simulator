@@ -5,6 +5,6 @@ for i in dat*.dat;
 	gnuplot "../plotter.gnuplot" > $i.gif;
 	done
 rm data
-convert dat*.dat animation.gif
+convert -delay 2 dat*.gif animation.gif
 rm dat*.gif
 cd ../;
