@@ -10,5 +10,6 @@ all:
 	$(CC) $(FLAGS) $(OPT) -mmic $(SRC) -o $(PROJ) $(LINKS)
 
 clean:
+	rm -f $(PROJ)
 	rm -f *.o
 	rm -f *.optrpt
