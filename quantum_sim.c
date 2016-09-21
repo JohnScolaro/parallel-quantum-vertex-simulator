@@ -13,11 +13,16 @@ and using the tridag solver from Numerical Recipes.
 To run, compile normally with gcc, and link the math library with -lm.
 */
 
+
+/* Includes */
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include <complex.h>
+
+
+/* Defines */
 #define PI 3.1415926
 
 
@@ -56,35 +61,37 @@ int main (int argc, char *argv[]) {
 	double probdens, reamp, imamp, g, k;
 	double complex alpha, beta;
 	int Nx, Nt, n = 0, j, ierr, choice;
-	char name[20];
+	/* Name of output file */
+	char name[20] = "test";
 
-	// Take user inputs
-	// example values:
-	// 0.1, 1, 0, 0.5, 0.1, 0, 1, 100, 0.01, 200, test
-	printf("Enter the strength of the non-linear coupling constant:\n");
-	scanf("%lf", &g);
-	printf("Enter the width of the initial function:\n");
-	scanf("%lf", &width);
-	printf("Enter 0 for Gaussian or 1 for hyperbolic secant:\n");
-	scanf("%i", &choice);
-	printf("Enter the position of the initial function:\n");
-	scanf("%lf", &xinit);
-	printf("Enter the momentum kick wavenumber:\n");
-	scanf("%lf", &k);
-	printf("Enter the positon of the first spatial grid boundary:\n");
-	scanf("%lf", &x0);
-	printf("Enter the position of the second spatial grid boundary:\n");
-	scanf("%lf", &xmax);
-	printf("Enter the number of spatial grid points:\n");
-	scanf("%i", &Nx);
+
+	/*
+	 * Constant setting:
+	 * If you want to run the program with different initial parameters, change
+	 * these numbers.
+	 */
+
+	/* Non-linear coupling constant */
+	g = 0.0;
+	/* Width of initial function */
+	width = 0.3;
+	/* Initial function. 0 = Gaussian, 1 = hyperbolic secant */
+	choice = 0;
+	/* The position of the initial function */
+	xinit = 0.0;
+	/* The momentum kick of the initial waveform */
+	k = 0.0;
+	/* Position of the first spacial grid boundary (x_min) */
+	x0 = -1.0;
+	/* Position of the second spacial grid boundary (x_max) */
+	xmax = 1.0;
+	/* The number of spacial grid points */
+	Nx = 100;
 	dx = (xmax - x0) / ((double) Nx + 1.0);
-	printf("The value of dx is %lf\n", dx);
-	printf("Enter the time step:\n");
-	scanf("%lf", &dt);
-	printf("Enter the number of time steps:\n");
-	scanf("%i", &Nt);
-	printf("Enter the name of the output file:\n");
-	scanf("%s", name);
+	/* Time Step */
+	dt = 0.005;
+	/* Number of time steps */
+	Nt = 100;
 
 	beta = 0.5 * dt * I;
 	alpha = -0.5 * beta / (dx * dx);
@@ -112,7 +119,7 @@ int main (int argc, char *argv[]) {
 		x = x + dx;
 		matxold[j] = func(width, x, xinit, k, choice);
 		probdens = cabs(matxold[j]) * cabs(matxold[j]);
-		potxtold[j] = g * probdens; //Looking for solitons. 0.5*pow(x - xinit, 2.0) is the test case
+		potxtold[j] = 0.5 * pow(x - xinit, 2.0); //0.5*pow(x - xinit, 2.0) is the test case // g * probdens
 		norm = norm + dx * probdens;
 		avloc = avloc + dx * x * probdens;
 		var1 = var1 + dx * x * x * probdens;
@@ -121,8 +128,23 @@ int main (int argc, char *argv[]) {
 	fprintf(fp2, "%15.5i %15.5lf %15.5lf %15.5lf %15.5lf\n", n, t, norm, avloc, var);
 	x = x0;
 
-	// Time loop
-	for (n = 0; n < Nt; n++) {
+	/* Put the initial values into the first file. */
+	fp = fopen("plots/dat0000.dat", "w");
+	for (j = 0; j < Nx; j++) {
+		x = x + dx;
+		probdens = cabs(potxtold[j]) * cabs(potxtold[j]);
+		reamp = creal(potxtold[j]);
+		imamp = cimag(potxtold[j]);
+		fprintf(fp, "%lf %lf %lf %lf\n", x, probdens, reamp, imamp);
+		norm = norm + dx * probdens;
+		avloc = avloc + dx * x * probdens;
+		var1 = var1 + dx * x * x * probdens;
+	}
+	fclose(fp);
+
+
+	/* Time loop */
+	for (n = 1; n <= Nt; n++) {
 		t = t + dt;
 		norm = 0.0;
 		avloc = 0.0;
@@ -133,11 +155,10 @@ int main (int argc, char *argv[]) {
 		sprintf((fname + 9), "%04i", n);
 		strcat(fname, ".dat");
 		fp = fopen(fname, "w");
-		//fprintf(fp, "%s %s\n", "Position (m)", "Function");
 
 		// Space loop, building up the A and R.H.S. matrices for tridag
-		for(j = 0; j < Nx; j++){
-			if (j == 0){
+		for (j = 0; j < Nx; j++) {
+			if (j == 0) {
 				rrhs[j] = (1.0 + 2.0 * alpha - beta * potxtold[j]) * matxold[j] - alpha * matxold[j+1];
 			}
 			else if (j == Nx - 1){
@@ -159,8 +180,8 @@ int main (int argc, char *argv[]) {
 		x = x0;
 		// Run through the solution array to calculate
 		// monitored values at the current time
-		if(ierr == 0){
-			for(j = 0; j < Nx; j++){
+		if (ierr == 0) {
+			for (j = 0; j < Nx; j++) {
 				x = x + dx;
 				probdens = cabs(xsoln[j]) * cabs(xsoln[j]);
 				reamp = creal(xsoln[j]);
@@ -175,7 +196,8 @@ int main (int argc, char *argv[]) {
 			exit(-1);
 		}
 		var = pow(var1-pow(avloc, 2.0), 0.5);
-		fprintf(fp2, "%15.5i %15.5lf %15.5lf %15.5lf %15.5lf\n", n+1, t, norm, avloc, var);
+		fprintf(fp2, "%15.5i %15.5lf %15.5lf %15.5lf %15.5lf\n", n + 1, t, norm,
+		 		avloc, var);
 		memcpy(matxold, xsoln, Nx * sizeof(double complex));
 		memcpy(potxtold, potxtnew, Nx * sizeof(double complex));
 		fclose(fp);
@@ -192,7 +214,7 @@ int main (int argc, char *argv[]) {
 	free(potxtold);
 	free(potxtnew);
 
-	return(0);
+	return 0;
 }
 
 
@@ -202,8 +224,8 @@ int tridag(double complex adiag[], double complex alower[], double complex auppe
 	double complex bet, *gam;
 
 	// Error check
-	if(fabs(adiag[0] == 0.0)){
-		return(-1);
+	if (fabs(adiag[0] == 0.0)) {
+		return -1;
 	}
 
 	gam = malloc(n * sizeof(double complex));
@@ -220,7 +242,7 @@ int tridag(double complex adiag[], double complex alower[], double complex auppe
 		xsoln[j] = (rrhs[j] - alower[j] * xsoln[j - 1]) / bet;
 	}
 
-	for(j = n - 2; j >= 0; j--){
+	for (j = n - 2; j >= 0; j--) {
 		xsoln[j] -= gam[j + 1] * xsoln[j + 1];
 	}
 
@@ -230,15 +252,29 @@ int tridag(double complex adiag[], double complex alower[], double complex auppe
 }
 
 
+/*
+ * This function creates initial functions depending on what the value in
+ * 'choice' is.
+ *
+ * 0 = Gaussian
+ * 1 = Hyperbolic secant
+ */
 double func(double width, double x, double xinit, double k, int choice) {
 	double complex ans;
-	// Gaussian option
-	if (choice == 0){
-		ans = (1.0 / pow(width * pow(PI, 0.5), 0.5)) * exp(-pow(x - xinit, 2.0) / (2.0 * width * width));
-	}
-	// Hyperbolic secant option
-	if (choice == 1){
-		ans = pow(PI / (6.0 * width * pow(2.0, 0.5)), 0.5) * (1.0 / cosh((PI / (3.0 * pow(2.0, 0.5))) * ((x - xinit) / width))) * cexp(I * k * x);
+
+	/* Gaussian */
+	if (choice == 0) {
+		ans = (1.0 / pow(width * pow(PI, 0.5), 0.5)) * exp(-pow(x - xinit, 2.0)
+				/ (2.0 * width * width));
+	/* Hyperbolic Secant */
+	} else if (choice == 1) {
+		ans = pow(PI / (6.0 * width * pow(2.0, 0.5)), 0.5) *
+				(1.0 / cosh((PI / (3.0 * pow(2.0, 0.5))) *
+				((x - xinit) / width))) * cexp(I * k * x);
+	} else if (choice == 2) {
+	/* Derivative of Gaussian */
+		ans = (1.0 / pow(width * pow(PI, 0.5), 0.5)) * exp(-pow(x - xinit, 2.0)
+				/ (2.0 * width * width)) * ((x - xinit) * x);
 	}
 
 	return(ans);
