@@ -53,8 +53,10 @@ int main (int argc, char *argv[]) {
 	// imamp -> imaginary part of the amplitude
 	// alpha -> collection of other factors
 	// beta -> collection of other factors
+	// var -> variance, and var is used to calculate this
 
-	// Declarations
+
+	/* Declarations */
 	double width, x0, xmax, x, xinit, dx, t = 0.0, dt;
 	double norm = 0.0, avloc = 0.0;
 	double var = 0.0, var1 = 0.0;
@@ -74,7 +76,7 @@ int main (int argc, char *argv[]) {
 	/* Non-linear coupling constant */
 	g = 0.0;
 	/* Width of initial function */
-	width = 0.3;
+	width = 1.0;
 	/* Initial function. 0 = Gaussian, 1 = hyperbolic secant */
 	choice = 0;
 	/* The position of the initial function */
@@ -82,47 +84,55 @@ int main (int argc, char *argv[]) {
 	/* The momentum kick of the initial waveform */
 	k = 0.0;
 	/* Position of the first spacial grid boundary (x_min) */
-	x0 = -1.0;
+	x0 = -3.0;
 	/* Position of the second spacial grid boundary (x_max) */
-	xmax = 1.0;
+	xmax = 3.0;
 	/* The number of spacial grid points */
-	Nx = 100;
+	Nx = 600;
 	dx = (xmax - x0) / ((double) Nx + 1.0);
 	/* Time Step */
-	dt = 0.005;
+	dt = 0.01;
 	/* Number of time steps */
 	Nt = 100;
 
 	beta = 0.5 * dt * I;
 	alpha = -0.5 * beta / (dx * dx);
 
-	// Dynamic arrays
-	double complex *matxold, *adiag, *alower, *aupper, *rrhs, *xsoln, *potxtold, *potxtnew;
-	matxold = malloc(Nx * sizeof(double complex));
+	/*
+	 * Allocating space for arrays to store values in to compute the tridiagonal
+	 * matrix.
+	 */
+	double complex *matxold, *adiag, *alower, *aupper, *rrhs, *xsoln, *potxtold,
+	 		*potxtnew;
+	matxold = malloc(Nx * sizeof(double complex)); //psi
 	adiag = malloc(Nx * sizeof(double complex));
 	alower = malloc(Nx * sizeof(double complex));
 	aupper = malloc(Nx * sizeof(double complex));
 	rrhs = malloc(Nx * sizeof(double complex));
 	xsoln = malloc(Nx * sizeof(double complex));
-	potxtold = malloc(Nx * sizeof(double complex));
+	potxtold = malloc(Nx * sizeof(double complex)); //potential V
 	potxtnew = malloc(Nx * sizeof(double complex));
 
-	// Set up files
+	/* Set up files */
 	FILE *fp;
 	FILE *fp2;
 	fp2 = fopen(name, "w");
 	fprintf(fp2, "%15s%15s%15s%20s%15s\n", "Iteration", "Time (s)", "Norm", "Av. location (m)", "Variance");
 
+	/*
+	 * Calculate the initial values of the wave function. This is done by
+	 * setting matxold values to the output of func for a given 'choice'
+	 * variable.
+	 */
 	x = x0;
-	// Calculate the initial values
 	for (j = 0; j < Nx; j++) {
 		x = x + dx;
 		matxold[j] = func(width, x, xinit, k, choice);
 		probdens = cabs(matxold[j]) * cabs(matxold[j]);
-		potxtold[j] = 0.5 * pow(x - xinit, 2.0); //0.5*pow(x - xinit, 2.0) is the test case // g * probdens
-		norm = norm + dx * probdens;
-		avloc = avloc + dx * x * probdens;
-		var1 = var1 + dx * x * x * probdens;
+		potxtold[j] = 0.5 * pow(x - xinit, 2.0); // g * probdens once I get it working for an oscillator
+		norm = norm + dx * probdens; //The norm
+		avloc = avloc + dx * x * probdens; // The average position
+		var1 = var1 + dx * x * x * probdens; // Not super important
 	}
 	var = pow((var1 - pow(avloc, 2.0)), 0.5);
 	fprintf(fp2, "%15.5i %15.5lf %15.5lf %15.5lf %15.5lf\n", n, t, norm, avloc, var);
@@ -135,37 +145,39 @@ int main (int argc, char *argv[]) {
 				"directory in the same directory as this file. To fix, type:"
 				" \"mkdir plots\".\n");
 		exit(-1);
-		}
+	}
+
 	for (j = 0; j < Nx; j++) {
 		x = x + dx;
-		probdens = cabs(potxtold[j]) * cabs(potxtold[j]);
-		reamp = creal(potxtold[j]);
-		imamp = cimag(potxtold[j]);
+		probdens = cabs(matxold[j]) * cabs(matxold[j]);
+		reamp = creal(matxold[j]);
+		imamp = cimag(matxold[j]);
 		fprintf(fp, "%lf %lf %lf %lf\n", x, probdens, reamp, imamp);
-		norm = norm + dx * probdens;
-		avloc = avloc + dx * x * probdens;
-		var1 = var1 + dx * x * x * probdens;
 	}
 	fclose(fp);
 
-
-	/* Time loop */
+	/* For every timestep */
 	for (n = 1; n <= Nt; n++) {
 		t = t + dt;
 		norm = 0.0;
 		avloc = 0.0;
 		var1 = 0.0;
 
+		/* Generate a file with a unique name */
 		char fname[64];
 		strcpy(fname, "plots/datxxxx");
 		sprintf((fname + 9), "%04i", n);
 		strcat(fname, ".dat");
 		fp = fopen(fname, "w");
 
-		// Space loop, building up the A and R.H.S. matrices for tridag
+		/*
+		 * For every point in space, build up the A and R.H.S matricies for
+		 * the tridiagonal solver.
+		 */
 		for (j = 0; j < Nx; j++) {
 			if (j == 0) {
-				rrhs[j] = (1.0 + 2.0 * alpha - beta * potxtold[j]) * matxold[j] - alpha * matxold[j+1];
+				rrhs[j] = (1.0 + (2.0 * alpha) - (beta * potxtold[j])) *
+						matxold[j] - (alpha * matxold[j + 1]);
 			}
 			else if (j == Nx - 1){
 				rrhs[j] = -alpha * matxold[j - 1] + (1.0 + 2.0 * alpha - beta * potxtold[j]) * matxold[j];
@@ -201,7 +213,7 @@ int main (int argc, char *argv[]) {
 			printf("ierr = 0 so no tridag solution found!\n");
 			exit(-1);
 		}
-		var = pow(var1-pow(avloc, 2.0), 0.5);
+		var = pow(var1 - pow(avloc, 2.0), 0.5);
 		fprintf(fp2, "%15.5i %15.5lf %15.5lf %15.5lf %15.5lf\n", n + 1, t, norm,
 		 		avloc, var);
 		memcpy(matxold, xsoln, Nx * sizeof(double complex));

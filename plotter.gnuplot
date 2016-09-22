@@ -1,5 +1,5 @@
 set term gif
-set xrange [-1:1]
+set xrange [-3:3]
 set yrange [0:2]
 set key below
 set style data line
