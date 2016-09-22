@@ -130,6 +130,12 @@ int main (int argc, char *argv[]) {
 
 	/* Put the initial values into the first file. */
 	fp = fopen("plots/dat0000.dat", "w");
+	if (fp == NULL) {
+		printf("This program won't create data unless you have a plots"
+				"directory in the same directory as this file. To fix, type:"
+				" \"mkdir plots\".\n");
+		exit(-1);
+		}
 	for (j = 0; j < Nx; j++) {
 		x = x + dx;
 		probdens = cabs(potxtold[j]) * cabs(potxtold[j]);
@@ -248,7 +254,7 @@ int tridag(double complex adiag[], double complex alower[], double complex auppe
 
 	free(gam);
 
-	return(0);
+	return 0;
 }
 
 
@@ -277,5 +283,5 @@ double func(double width, double x, double xinit, double k, int choice) {
 				/ (2.0 * width * width)) * ((x - xinit) * x);
 	}
 
-	return(ans);
+	return ans;
 }
