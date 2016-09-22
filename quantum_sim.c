@@ -74,7 +74,7 @@ int main (int argc, char *argv[]) {
 	 */
 
 	/* Non-linear coupling constant */
-	g = 0.0;
+	g = -5.0;
 	/* Width of initial function */
 	width = 1.0;
 	/* Initial function. 0 = Gaussian, 1 = hyperbolic secant */
@@ -129,7 +129,7 @@ int main (int argc, char *argv[]) {
 		x = x + dx;
 		matxold[j] = func(width, x, xinit, k, choice);
 		probdens = cabs(matxold[j]) * cabs(matxold[j]);
-		potxtold[j] = 0.5 * pow(x - xinit, 2.0); // g * probdens once I get it working for an oscillator
+		potxtold[j] = 0.5 * pow(x, 2.0); // g * probdens once I get it working for an oscillator
 		norm = norm + dx * probdens; //The norm
 		avloc = avloc + dx * x * probdens; // The average position
 		var1 = var1 + dx * x * x * probdens; // Not super important
@@ -186,9 +186,9 @@ int main (int argc, char *argv[]) {
 				rrhs[j] = -alpha * matxold[j - 1] + (1.0 + 2.0 * alpha - beta * potxtold[j]) * matxold[j] - alpha * matxold[j + 1];
 			}
 			probdens = cabs(matxold[j]) * cabs(matxold[j]);
-			potxtnew[j] = g * probdens;
+			potxtnew[j] = potxtold[j] - g * probdens;
 			alower[j] = alpha;
-			adiag[j] = (1.0 - 2.0 * alpha + beta * potxtnew[j]);
+			adiag[j] = (1.0 - 2.0 * alpha + beta * potxtnew[j]); //was potxtnew
 			aupper[j] = alpha;
 		}
 
@@ -217,7 +217,7 @@ int main (int argc, char *argv[]) {
 		fprintf(fp2, "%15.5i %15.5lf %15.5lf %15.5lf %15.5lf\n", n + 1, t, norm,
 		 		avloc, var);
 		memcpy(matxold, xsoln, Nx * sizeof(double complex));
-		memcpy(potxtold, potxtnew, Nx * sizeof(double complex));
+		//memcpy(potxtold, potxtnew, Nx * sizeof(double complex));
 		fclose(fp);
 	}
 	fclose(fp2);
