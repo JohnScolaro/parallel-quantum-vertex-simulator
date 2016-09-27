@@ -1,10 +1,10 @@
 set term gif
-set xrange [-3:3]
-set yrange [0:2]
+set xrange [-4:4]
+set yrange [-2:3.5]
 set key below
 set style data line
-set title "G < 0"
+set title "Moving a Quantum Vortex with Fixed Scaling"
 set xlabel "Position"
 set ylabel "Probability"
 
-plot "data"
+plot "data" using 1:2 title 'Probability', "data" using 1:3 title 'Real', "data" using 1:4 title 'Imaginary'
