@@ -1,5 +1,8 @@
 all:
-	gcc quantum_sim.c -o quantum_sim -lm -g -std=c99
+	gcc quantum_sim.c -o quantum_sim -lm -std=c99
+
+openmp:
+	gcc quantum_sim.c -o quantum_sim -lm -std=c99 -fopenmp
 
 clean:
 	rm -f *.o

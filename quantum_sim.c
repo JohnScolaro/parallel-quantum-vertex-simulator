@@ -12,6 +12,7 @@
 #include <math.h>
 #include <string.h>
 #include <complex.h>
+#include <omp.h>
 
 
 /* Defines */
@@ -21,6 +22,7 @@
 /* Function Predeclarations */
 int tridag(double complex *, double complex *, double complex *, double complex *, double complex *, int);
 double func(double, double, double, double, int);
+
 
 
 int main (int argc, char *argv[]) {
@@ -69,13 +71,13 @@ int main (int argc, char *argv[]) {
 	/* Position of the second spacial grid boundary (x_max) */
 	xmax = 6.0;
 	/* The number of spacial grid points */
-	Nx = 600;
+	Nx = 1000;
 	/* Time Step */
 	dt = 0.05;
 	/* Number of time steps */
-	Nt = 100;
+	Nt = 10000;
 	/* Option to force a moving zero in the wavefunction. 0 = no, 1 = yes. */
-	moving = 1;
+	moving = 0;
 	/*
 	 * How often the program prints data. 1 = every time step, 2 = every 2nd,
 	 * etc. This is useful for longer, more precise calcualtions, as printing
@@ -83,7 +85,7 @@ int main (int argc, char *argv[]) {
 	 * very precise solutions it may be useful to only print every 50 or 100
 	 * time steps.
 	 */
-	output_frequency = 1;
+	output_frequency = 100;
 
 	/*
 	 * Calculated Variables
@@ -103,6 +105,7 @@ int main (int argc, char *argv[]) {
 	matxold = malloc(Nx * sizeof(double complex));
 	/* This is the potential */
 	potxtold = malloc(Nx * sizeof(double complex));
+	potxtnew = malloc(Nx * sizeof(double complex));
 	/* These are arrays populated later, and used in the tridiagonal solver */
 	adiag = malloc(Nx * sizeof(double complex));
 	alower = malloc(Nx * sizeof(double complex));
@@ -178,6 +181,7 @@ int main (int argc, char *argv[]) {
 		 * For every point in space, build up the A and R.H.S matricies for
 		 * the tridiagonal solver.
 		 */
+		#pragma omp parallel for
 		for (j = 0; j < Nx; j++) {
 			if (j == 0) {
 				rrhs[j] = (1.0 + (2.0 * alpha) - (beta * potxtold[j])) *
