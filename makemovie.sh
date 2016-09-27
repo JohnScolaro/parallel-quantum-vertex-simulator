@@ -6,5 +6,5 @@ for i in dat*.dat;
 	done
 rm data
 convert -delay 5 dat*.gif animation.gif
-#rm dat*.gif
+rm dat*.gif
 cd ../;

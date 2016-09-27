@@ -32,7 +32,7 @@ int main (int argc, char *argv[]) {
 	// imamp -> imaginary part of the amplitude
 	// alpha ->	collection of constants in the schroedinger equation, assuming
 	//			that hbar, weight, and mass are all equal to 1.
-	// beta -> collection of other factors
+	// beta -> same as alpha
 	// var -> variance, and var is used to calculate this
 
 
@@ -42,7 +42,8 @@ int main (int argc, char *argv[]) {
 	double var = 0.0, var1 = 0.0;
 	double probdens, reamp, imamp, g, k;
 	double complex alpha, beta;
-	int Nx, Nt, n = 0, j, ierr, choice, moving;
+	int Nx, Nt, n = 0, j, ierr, choice, moving, output_number = 1;
+	int output_frequency;
 
 
 	/*
@@ -52,12 +53,12 @@ int main (int argc, char *argv[]) {
 	 */
 
 	/* Name of output file */
- 	char name[20] = "test.txt";
+ 	char name[20] = "test";
 	/* Non-linear coupling constant */
 	g = 0.0;
 	/* Width of initial function */
 	width = 1.0;
-	/* Initial function. 0 = Gaussian, 1 = hyperbolic secant */
+	/* Initial function. Check the 'func' function to see all options.*/
 	choice = 2;
 	/* The position of the initial function */
 	xinit = 0.0;
@@ -72,16 +73,23 @@ int main (int argc, char *argv[]) {
 	/* Time Step */
 	dt = 0.05;
 	/* Number of time steps */
-	Nt = 400;
+	Nt = 100;
 	/* Option to force a moving zero in the wavefunction. 0 = no, 1 = yes. */
 	moving = 1;
+	/*
+	 * How often the program prints data. 1 = every time step, 2 = every 2nd,
+	 * etc. This is useful for longer, more precise calcualtions, as printing
+	 * requires way more overhead than simply performing arithmatic, so for
+	 * very precise solutions it may be useful to only print every 50 or 100
+	 * time steps.
+	 */
+	output_frequency = 1;
 
 	/*
 	 * Calculated Variables
 	 */
 	/* The distance between two points. */
 	dx = (xmax - x0) / ((double) Nx + 1.0);
-
 	beta = 0.5 * dt * I;
 	alpha = -0.5 * beta / (dx * dx);
 
@@ -91,20 +99,22 @@ int main (int argc, char *argv[]) {
 	 */
 	double complex *matxold, *adiag, *alower, *aupper, *rrhs, *xsoln, *potxtold;
 	double complex *potxtnew;
+	/* This is psi */
 	matxold = malloc(Nx * sizeof(double complex));
+	/* This is the potential */
+	potxtold = malloc(Nx * sizeof(double complex));
+	/* These are arrays populated later, and used in the tridiagonal solver */
 	adiag = malloc(Nx * sizeof(double complex));
 	alower = malloc(Nx * sizeof(double complex));
 	aupper = malloc(Nx * sizeof(double complex));
 	rrhs = malloc(Nx * sizeof(double complex));
 	xsoln = malloc(Nx * sizeof(double complex));
-	potxtold = malloc(Nx * sizeof(double complex));
-	potxtnew = malloc(Nx * sizeof(double complex));
 
 	/* Set up files */
-	FILE *fp;
-	FILE *fp2;
+	FILE *fp = NULL, *fp2 = NULL;
 	fp2 = fopen(name, "w");
-	fprintf(fp2, "%15s%15s%15s%20s%15s\n", "Iteration", "Time (s)", "Norm", "Av. location (m)", "Variance");
+	fprintf(fp2, "%15s%15s%15s%20s%15s\n", "Iteration", "Time (s)", "Norm",
+			"Av. location (m)", "Variance");
 
 	/*
 	 * Calculate the initial values of the wave function. This is done by
@@ -141,19 +151,28 @@ int main (int argc, char *argv[]) {
 	}
 	fclose(fp);
 
-	/* For every timestep */
+	/*
+	 * This is where the program essentially begins doing the bulk of its work
+	 * This first loop loops over each timestep.
+	 */
 	for (n = 1; n <= Nt; n++) {
 		t = t + dt;
 		norm = 0.0;
 		avloc = 0.0;
 		var1 = 0.0;
 
-		/* Generate a file with a unique name */
-		char fname[64];
-		strcpy(fname, "plots/datxxxx");
-		sprintf((fname + 9), "%04i", n);
-		strcat(fname, ".dat");
-		fp = fopen(fname, "w");
+		/* Generate a file with a unique name. */
+		if (n % output_frequency == 0) {
+			char fname[64];
+			strcpy(fname, "plots/datxxxx");
+			sprintf((fname + 9), "%04i", output_number);
+			strcat(fname, ".dat");
+			fp = fopen(fname, "w");
+			output_number++;
+		} else {
+			fp = NULL;
+		}
+
 
 		/*
 		 * For every point in space, build up the A and R.H.S matricies for
@@ -215,7 +234,9 @@ int main (int argc, char *argv[]) {
 			probdens = cabs(xsoln[j]) * cabs(xsoln[j]);
 			reamp = creal(xsoln[j]);
 			imamp = cimag(xsoln[j]);
-			fprintf(fp, "%lf %lf %lf %lf\n", x, probdens, reamp, imamp);
+			if (fp != NULL) {
+				fprintf(fp, "%lf %lf %lf %lf\n", x, probdens, reamp, imamp);
+			}
 			norm = norm + dx * probdens;
 			avloc = avloc + dx * x * probdens;
 			var1 = var1 + dx * x * x * probdens;
@@ -224,7 +245,9 @@ int main (int argc, char *argv[]) {
 		fprintf(fp2, "%15.5i %15.5lf %15.5lf %15.5lf %15.5lf\n", n + 1, t, norm,
 		 		avloc, var);
 		memcpy(matxold, xsoln, Nx * sizeof(double complex));
-		fclose(fp);
+		if (fp != NULL) {
+			fclose(fp);
+		}
 	}
 	fclose(fp2);
 
@@ -236,7 +259,6 @@ int main (int argc, char *argv[]) {
 	free(rrhs);
 	free(xsoln);
 	free(potxtold);
-	free(potxtnew);
 
 	return 0;
 }
