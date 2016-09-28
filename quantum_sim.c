@@ -24,14 +24,13 @@ int tridag(double complex *, double complex *, double complex *, double complex 
 double func(double, double, double, double, int);
 
 
-
 int main (int argc, char *argv[]) {
 	// norm -> Norm of the solution
 	// avloc -> average location
 	// name -> name of the file containing norm and expectation values over time
 	// probdens -> probability density
-	// reamp -> real part of the amplitude
-	// imamp -> imaginary part of the amplitude
+	// reamp -> real part of psi
+	// imamp -> imaginary part of psi
 	// alpha ->	collection of constants in the schroedinger equation, assuming
 	//			that hbar, weight, and mass are all equal to 1.
 	// beta -> same as alpha
@@ -39,11 +38,11 @@ int main (int argc, char *argv[]) {
 
 
 	/* Declarations */
-	double width, x0, xmax, x, xinit, dx, t = 0.0, dt;
+	double width, x0, xmax, x, xinit, dx;
 	double norm = 0.0, avloc = 0.0;
 	double var = 0.0, var1 = 0.0;
 	double probdens, reamp, imamp, g, k;
-	double complex alpha, beta;
+	double complex alpha, beta, dt, t = 0.0;
 	int Nx, Nt, n = 0, j, ierr, choice, moving, output_number = 1;
 	int output_frequency;
 
@@ -59,11 +58,11 @@ int main (int argc, char *argv[]) {
 	/* Non-linear coupling constant */
 	g = 0.0;
 	/* Width of initial function */
-	width = 1.0;
+	width = 0.5;
 	/* Initial function. Check the 'func' function to see all options.*/
-	choice = 2;
+	choice = 3;
 	/* The position of the initial function */
-	xinit = 0.0;
+	xinit = 0.6;
 	/* The momentum kick of the initial waveform */
 	k = 0.0;
 	/* Position of the first spacial grid boundary (x_min) */
@@ -71,11 +70,11 @@ int main (int argc, char *argv[]) {
 	/* Position of the second spacial grid boundary (x_max) */
 	xmax = 6.0;
 	/* The number of spacial grid points */
-	Nx = 1000;
+	Nx = 500;
 	/* Time Step */
-	dt = 0.05;
+	dt = 0.03;
 	/* Number of time steps */
-	Nt = 1000;
+	Nt = 200;
 	/* Option to force a moving zero in the wavefunction. 0 = no, 1 = yes. */
 	moving = 0;
 	/*
@@ -85,7 +84,7 @@ int main (int argc, char *argv[]) {
 	 * very precise solutions it may be useful to only print every 50 or 100
 	 * time steps.
 	 */
-	output_frequency = 10;
+	output_frequency = 1;
 
 	/*
 	 * Calculated Variables
@@ -141,16 +140,17 @@ int main (int argc, char *argv[]) {
 	/* Put the initial values into the first file. */
 	fp = fopen("plots/dat0000.dat", "w");
 	if (fp == NULL) {
-		printf("This program won't create data unless you have a plots"
-				"directory in the same directory as this file. To fix, type:"
-				" \"mkdir plots\".\n");
+		printf("This program won't create data unless you have a plots "
+				"directory in the same directory as this file. To fix, type: "
+				"\"mkdir plots\".\n");
 		exit(-1);
 	}
 
 	for (j = 0; j < Nx; j++) {
 		x = x + dx;
 		probdens = cabs(matxold[j]) * cabs(matxold[j]);
-		fprintf(fp, "%lf %lf %lf %lf\n", x, probdens, creal(matxold[j]), cimag(matxold[j]));
+		fprintf(fp, "%lf %lf %lf %lf\n", x, probdens, creal(matxold[j]),
+				cimag(matxold[j]));
 	}
 	fclose(fp);
 
