@@ -71,7 +71,7 @@ int main (int argc, char *argv[]) {
 	/* Position of the second spacial grid boundary (x_max) */
 	xmax = 6.0;
 	/* The number of spacial grid points */
-	Nx = 1000;
+	Nx = 10000;
 	/* Time Step */
 	dt = 0.05;
 	/* Number of time steps */
@@ -85,7 +85,7 @@ int main (int argc, char *argv[]) {
 	 * very precise solutions it may be useful to only print every 50 or 100
 	 * time steps.
 	 */
-	output_frequency = 10;
+	output_frequency = 100;
 
 	/*
 	 * Calculated Variables
@@ -179,8 +179,11 @@ int main (int argc, char *argv[]) {
 
 		/*
 		 * For every point in space, build up the A and R.H.S matricies for
-		 * the tridiagonal solver.
+		 * the tridiagonal solver. In this for loop, we update rrhs depending
+		 * on the values of psi (matxold), constants, and the potential.
+		 * Because of this, we can parallelize it with OpenMP.
 		 */
+		//omp_set_num_threads(20);
 		#pragma omp parallel for
 		for (j = 0; j < Nx; j++) {
 			if (j == 0) {
