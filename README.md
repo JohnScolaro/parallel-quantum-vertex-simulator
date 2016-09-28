@@ -24,3 +24,5 @@ This folder will contain all the data from quantum_sim when it is a ran. If it d
 
 #Instructions
 Simply type: 'Make'. This will make the quantum_sim program. Then run it with './quantum_sim'. This generated all the data in the plots folder. Then run './make_movie.sh'. This will create a gif in the plots folder, which will be an animation of the wavefunction over time. The get the program to create different plots, or to do custom things to the animation, you can either edit the variable values at the top of quantum_sim.c, and recompile and run the code again, or you can add your own code to quantum_sim.c, and rerun it.
+
+![](https://github.com/JohnScolaro/parallel-quantum-vertex-simulator/blob/master/examples/1.gif)
