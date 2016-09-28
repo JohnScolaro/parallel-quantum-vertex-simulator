@@ -75,17 +75,17 @@ int main (int argc, char *argv[]) {
 	/* Time Step */
 	dt = 0.05;
 	/* Number of time steps */
-	Nt = 10000;
+	Nt = 1000;
 	/* Option to force a moving zero in the wavefunction. 0 = no, 1 = yes. */
 	moving = 0;
 	/*
 	 * How often the program prints data. 1 = every time step, 2 = every 2nd,
-	 * etc. This is useful for longer, more precise calcualtions, as printing
+	 * etc. This is useful for longer, more precise calculations, as printing
 	 * requires way more overhead than simply performing arithmatic, so for
 	 * very precise solutions it may be useful to only print every 50 or 100
 	 * time steps.
 	 */
-	output_frequency = 100;
+	output_frequency = 10;
 
 	/*
 	 * Calculated Variables
@@ -214,6 +214,7 @@ int main (int argc, char *argv[]) {
 		 * is: 300 + (n / 4), and it is smoothed exponentially on either side.
 		 */
 		if (moving == 1) {
+			#pragma omp parallel for
 			for (int j = 0; j < Nx; j++) {
 				if (j == 300 + (n / 4)) {
 					// Fixing the centre point
@@ -283,7 +284,7 @@ int tridag(double complex adiag[], double complex alower[], double complex auppe
 	bet = adiag[0];
 	xsoln[0] = rrhs[0] / bet;
 
-	for (j = 1; j < n; j++){
+	for (j = 1; j < n; j++) {
 		gam[j] = aupper[j - 1] / bet;
 		bet = adiag[j] - alower[j] * gam[j];
 		if (fabs(bet) == 0.0) {
