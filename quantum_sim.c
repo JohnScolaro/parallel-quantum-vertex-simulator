@@ -70,11 +70,11 @@ int main (int argc, char *argv[]) {
 	/* Position of the second spacial grid boundary (x_max) */
 	xmax = 6.0;
 	/* The number of spacial grid points */
-	Nx = 500;
+	Nx = 10000;
 	/* Time Step */
 	dt = 0.03;
 	/* Number of time steps */
-	Nt = 200;
+	Nt = 1000;
 	/* Option to force a moving zero in the wavefunction. 0 = no, 1 = yes. */
 	moving = 0;
 	/*
@@ -84,7 +84,7 @@ int main (int argc, char *argv[]) {
 	 * very precise solutions it may be useful to only print every 50 or 100
 	 * time steps.
 	 */
-	output_frequency = 1;
+	output_frequency = 100;
 
 	/*
 	 * Calculated Variables

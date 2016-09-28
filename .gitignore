@@ -1,7 +1,6 @@
 *.o
 *.dat
 *.out
-*.gif
 quantum_sim*
 test
 
