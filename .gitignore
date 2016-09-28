@@ -2,4 +2,6 @@
 *.dat
 *.out
 *.gif
-quantum_sim
+quantum_sim*
+test
+
