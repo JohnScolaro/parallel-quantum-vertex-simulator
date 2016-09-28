@@ -3,7 +3,7 @@ set xrange [-4:4]
 set yrange [-2:3.5]
 set key below
 set style data line
-set title "Moving a Quantum Vortex with Fixed Scaling"
+set title "#YOLO"
 set xlabel "Position"
 set ylabel "Probability"
 
