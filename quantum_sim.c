@@ -41,10 +41,10 @@ int main (int argc, char *argv[]) {
 	double width, x0, xmax, x, xinit, dx;
 	double norm = 0.0, avloc = 0.0;
 	double var = 0.0, var1 = 0.0;
-	double probdens, reamp, imamp, g, k;
+	double probdens, reamp, imamp, g, k, moveSpeed;
 	double complex alpha, beta, dt, t = 0.0;
 	int Nx, Nt, n = 0, j, ierr, choice, moving, output_number = 1;
-	int output_frequency;
+	int output_frequency, normalize;
 
 
 	/*
@@ -58,7 +58,7 @@ int main (int argc, char *argv[]) {
 	/* Non-linear coupling constant */
 	g = 0.0;
 	/* Width of initial function */
-	width = 0.5;
+	width = 1;
 	/* Initial function. Check the 'func' function to see all options.*/
 	choice = 3;
 	/* The position of the initial function */
@@ -70,13 +70,17 @@ int main (int argc, char *argv[]) {
 	/* Position of the second spacial grid boundary (x_max) */
 	xmax = 6.0;
 	/* The number of spacial grid points */
-	Nx = 10000;
-	/* Time Step */
-	dt = 0.03;
+	Nx = 600;
+	/* Time Step. Simply add (-1 * I) to make it imaginary */
+	dt = -0.03 * I;
 	/* Number of time steps */
-	Nt = 1000;
+	Nt = 200;
+	/* Option to normalize the probability after each time step */
+	normalize = 1;
 	/* Option to force a moving zero in the wavefunction. 0 = no, 1 = yes. */
 	moving = 0;
+	/* Option to change the moving speed */
+	moveSpeed = 0.5;
 	/*
 	 * How often the program prints data. 1 = every time step, 2 = every 2nd,
 	 * etc. This is useful for longer, more precise calculations, as printing
@@ -84,7 +88,7 @@ int main (int argc, char *argv[]) {
 	 * very precise solutions it may be useful to only print every 50 or 100
 	 * time steps.
 	 */
-	output_frequency = 100;
+	output_frequency = 1;
 
 	/*
 	 * Calculated Variables
@@ -98,13 +102,13 @@ int main (int argc, char *argv[]) {
 	 * Allocating space for arrays to store values in to compute the tridiagonal
 	 * matrix.
 	 */
-	double complex *matxold, *adiag, *alower, *aupper, *rrhs, *xsoln, *potxtold;
-	double complex *potxtnew;
+	double complex *psi, *adiag, *alower, *aupper, *rrhs, *xsoln, *potential;
+	double complex *potentialInteraction;
 	/* This is psi */
-	matxold = malloc(Nx * sizeof(double complex));
+	psi = malloc(Nx * sizeof(double complex));
 	/* This is the potential */
-	potxtold = malloc(Nx * sizeof(double complex));
-	potxtnew = malloc(Nx * sizeof(double complex));
+	potential = malloc(Nx * sizeof(double complex));
+	potentialInteraction = malloc(Nx * sizeof(double complex));
 	/* These are arrays populated later, and used in the tridiagonal solver */
 	adiag = malloc(Nx * sizeof(double complex));
 	alower = malloc(Nx * sizeof(double complex));
@@ -115,23 +119,23 @@ int main (int argc, char *argv[]) {
 	/* Set up files */
 	FILE *fp = NULL, *fp2 = NULL;
 	fp2 = fopen(name, "w");
-	fprintf(fp2, "%15s%15s%15s%20s%15s\n", "Iteration", "Time (s)", "Norm",
-			"Av. location (m)", "Variance");
+	fprintf(fp2, "%15s%15s%15s%20s%15s\n", "Iteration", "Time", "Norm",
+			"Av. location", "Variance");
 
 	/*
 	 * Calculate the initial values of the wave function. This is done by
-	 * setting matxold values to the output of func for a given 'choice'
+	 * setting psi values to the output of func for a given 'choice'
 	 * variable.
 	 */
 	x = x0;
 	for (j = 0; j < Nx; j++) {
 		x = x + dx;
-		matxold[j] = func(width, x, xinit, k, choice);
-		probdens = cabs(matxold[j]) * cabs(matxold[j]);
-		potxtold[j] = 0.5 * pow(x, 2.0); // g * probdens once I get it working for an oscillator
-		norm = norm + dx * probdens; //The norm
-		avloc = avloc + dx * x * probdens; // The average position
-		var1 = var1 + dx * x * x * probdens; // Not super important
+		psi[j] = func(width, x, xinit, k, choice);
+		probdens = cabs(psi[j]) * cabs(psi[j]);
+		potential[j] = 0.5 * pow(x, 2.0); // This is the potential for a harmonic oscillator
+		norm += dx * probdens; //The norm
+		avloc += dx * x * probdens; // The average position
+		var1 += dx * x * x * probdens; // Not super important
 	}
 	var = pow((var1 - pow(avloc, 2.0)), 0.5);
 	fprintf(fp2, "%15.5i %15.5lf %15.5lf %15.5lf %15.5lf\n", n, t, norm, avloc, var);
@@ -148,9 +152,9 @@ int main (int argc, char *argv[]) {
 
 	for (j = 0; j < Nx; j++) {
 		x = x + dx;
-		probdens = cabs(matxold[j]) * cabs(matxold[j]);
-		fprintf(fp, "%lf %lf %lf %lf\n", x, probdens, creal(matxold[j]),
-				cimag(matxold[j]));
+		probdens = cabs(psi[j]) * cabs(psi[j]);
+		fprintf(fp, "%lf %lf %lf %lf\n", x, probdens, creal(psi[j]),
+				cimag(psi[j]));
 	}
 	fclose(fp);
 
@@ -160,9 +164,6 @@ int main (int argc, char *argv[]) {
 	 */
 	for (n = 1; n <= Nt; n++) {
 		t = t + dt;
-		norm = 0.0;
-		avloc = 0.0;
-		var1 = 0.0;
 
 		/* Generate a file with a unique name. */
 		if (n % output_frequency == 0) {
@@ -180,26 +181,26 @@ int main (int argc, char *argv[]) {
 		/*
 		 * For every point in space, build up the A and R.H.S matricies for
 		 * the tridiagonal solver. In this for loop, we update rrhs depending
-		 * on the values of psi (matxold), constants, and the potential.
+		 * on the values of psi (psi), constants, and the potential.
 		 * Because of this, we can parallelize it with OpenMP.
 		 */
 		//omp_set_num_threads(20);
 		#pragma omp parallel for
 		for (j = 0; j < Nx; j++) {
 			if (j == 0) {
-				rrhs[j] = (1.0 + (2.0 * alpha) - (beta * potxtold[j])) *
-						matxold[j] - (alpha * matxold[j + 1]);
+				rrhs[j] = (1.0 + (2.0 * alpha) - (beta * potential[j])) *
+						psi[j] - (alpha * psi[j + 1]);
 			} else if (j == Nx - 1) {
-				rrhs[j] = -alpha * matxold[j - 1] + (1.0 + 2.0 * alpha - beta *
-						potxtold[j]) * matxold[j];
+				rrhs[j] = -alpha * psi[j - 1] + (1.0 + 2.0 * alpha - beta *
+						potential[j]) * psi[j];
 			} else {
-				rrhs[j] = -alpha * matxold[j - 1] + (1.0 + 2.0 * alpha - beta *
-						potxtold[j]) * matxold[j] - alpha * matxold[j + 1];
+				rrhs[j] = -alpha * psi[j - 1] + (1.0 + 2.0 * alpha - beta *
+						potential[j]) * psi[j] - alpha * psi[j + 1];
 			}
-			probdens = cabs(matxold[j]) * cabs(matxold[j]);
-			potxtnew[j] = potxtold[j] - g * probdens;
+			probdens = cabs(psi[j]) * cabs(psi[j]);
+			potentialInteraction[j] = potential[j] - g * probdens;
 			alower[j] = alpha;
-			adiag[j] = (1.0 - 2.0 * alpha + beta * potxtnew[j]);
+			adiag[j] = (1.0 - 2.0 * alpha + beta * potentialInteraction[j]);
 			aupper[j] = alpha;
 		}
 
@@ -214,20 +215,30 @@ int main (int argc, char *argv[]) {
 
 		/* Manually edit the waveform to attempt to make it travel. Edit all
 		 * points on either side to smooth the waveform. The point of movement
-		 * is: 300 + (n / 4), and it is smoothed exponentially on either side.
+		 * is: ((Nx / 2) + (int) ((Nx * n * moveSpeed) / (2 * Nt))), and it is
+		 * smoothed exponentially on either side.
+		 *
+		 * This formula lets us start in the middle, at Nx / 2, and snowly
+		 * travel to (Nx / 2) + (Nx * moveSpeed / 2) by the end of the sim. So
+		 * if moveSpeed equals 1, we will move from Nx / 2 to Nx. If Movespeed
+		 * -0.5, then it will move from Nx / 2 to Nx / 4 over the whole sim.
 		 */
 		if (moving == 1) {
 			#pragma omp parallel for
 			for (int j = 0; j < Nx; j++) {
-				if (j == 300 + (n / 4)) {
+				if (j == ((Nx / 2) + (int) ((Nx * n * moveSpeed) / (2 * Nt)))) {
 					// Fixing the centre point
 					xsoln[j] = 0.0;
-				} else if (j < (300 + (n / 4))) {
+				} else if (j <= ((Nx / 2) + (int) ((Nx * n * moveSpeed) /
+						(2 * Nt)))) {
 					// Smoothing below the centre point
-					xsoln[j] = (1 - exp(-0.2 * ((300 + (n / 4)) - j))) * xsoln[j];
-				} else if (j > (300 + (n / 4))) {
+					xsoln[j] *= (1 - exp(-0.2 * (((Nx / 2) + (int)
+							((Nx * n * moveSpeed) / (2 * Nt))) - j)));
+				} else if (j >= ((Nx / 2) + (int) ((Nx * n * moveSpeed) /
+						(2 * Nt)))) {
 					// Smoothing above the centre point
-					xsoln[j] = (1 - exp(-0.2 * (j - (300 + (n / 4))))) * xsoln[j];
+					xsoln[j] *= (1 - exp(-0.2 * (j - ((Nx / 2) + (int)
+							((Nx * n * moveSpeed) / (2 * Nt))))));
 				}
 			}
 		}
@@ -237,6 +248,9 @@ int main (int argc, char *argv[]) {
 		 * current time and print them.
 		 */
 		x = x0;
+		norm = 0.0;
+		avloc = 0.0;
+		var1 = 0.0;
 		for (j = 0; j < Nx; j++) {
 			x = x + dx;
 			probdens = cabs(xsoln[j]) * cabs(xsoln[j]);
@@ -245,14 +259,26 @@ int main (int argc, char *argv[]) {
 			if (fp != NULL) {
 				fprintf(fp, "%lf %lf %lf %lf\n", x, probdens, reamp, imamp);
 			}
-			norm = norm + dx * probdens;
-			avloc = avloc + dx * x * probdens;
-			var1 = var1 + dx * x * x * probdens;
+			norm += dx * probdens;
+			avloc += dx * x * probdens;
+			var1 += dx * x * x * probdens;
 		}
+
 		var = pow(var1 - pow(avloc, 2.0), 0.5);
-		fprintf(fp2, "%15.5i %15.5lf %15.5lf %15.5lf %15.5lf\n", n + 1, t, norm,
+		fprintf(fp2, "%15.5d %15.5lf %15.5lf %15.5lf %15.5lf\n", n, t, norm,
 		 		avloc, var);
-		memcpy(matxold, xsoln, Nx * sizeof(double complex));
+
+		/*
+		 * Normalize the wavefunction after each time step.
+		 */
+		if (normalize == 1) {
+			#pragma omp parallel for
+			for (j = 0; j < Nx; j++) {
+				xsoln[j] /= sqrt(norm);
+			}
+		}
+
+		memcpy(psi, xsoln, Nx * sizeof(double complex));
 		if (fp != NULL) {
 			fclose(fp);
 		}
@@ -260,13 +286,13 @@ int main (int argc, char *argv[]) {
 	fclose(fp2);
 
 	/* Free allocated memory */
-	free(matxold);
+	free(psi);
 	free(adiag);
 	free(alower);
 	free(aupper);
 	free(rrhs);
 	free(xsoln);
-	free(potxtold);
+	free(potential);
 
 	return 0;
 }
