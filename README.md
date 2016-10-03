@@ -44,7 +44,6 @@ Some quick examples to get you going immediately:
 	normalize = 1;
 	moving = 0;
 	moveSpeed = 0.5;
-It should look like this:
 ![](https://github.com/JohnScolaro/parallel-quantum-vertex-simulator/blob/master/examples/ground_state.gif)
 ###2: A displaced third Eigenstate of the Harmonic Oscillator evolving through Negative Imaginary Time
 	g = 0.0;
