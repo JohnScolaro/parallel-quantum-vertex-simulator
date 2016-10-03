@@ -26,7 +26,7 @@ This folder will contain all the data from quantum_sim when it is a ran. If it d
 This folder contains some example gifs for viewing. It hosts the images which displayed in this README file.
 
 #Instructions
-Simply type: 'Make'. This will make the quantum_sim program. Then run it with './quantum_sim'. This generates all the data in the plots folder. Then run './make_movie.sh'. This will create a gif in the plots folder, which will be an animation of the wavefunction over time. The get the program to create different plots, or to do custom things to the animation, you can either edit the variable values at the top of quantum_sim.c, and recompile and run the code again, or you can add your own custom code to quantum_sim.c, and rerun it.
+Simply type: 'Make'. This will make the quantum_sim program. Then run it with './quantum_sim'. This generates all the data in the plots folder. Then run './make_movie.sh'. This will create a gif in the plots folder, which will be an animation of the wavefunction over time. The get the program to create different plots, or to do custom things to the animation, you can either edit the variable values at the top of quantum_sim.c, and recompile and run the code again, or you can add your own custom code to quantum_sim.c, and rerun it. For examples to get the Xeon Phi working, see my other Repo: [XeonPhiExamples](https://github.com/JohnScolaro/XeonPhiExamples)
 
 #Example Options
 Some quick examples to get you going immediately:
