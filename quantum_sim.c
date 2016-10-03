@@ -244,8 +244,8 @@ int main (int argc, char *argv[]) {
 		}
 
 		/*
-		 * Run through the solution array to calculate monitored values at the
-		 * current time and print them.
+		 * Run through the solution and calculate monitored values at the
+		 * current time and print them. Also prints the values which we graph.
 		 */
 		x = x0;
 		norm = 0.0;
@@ -298,7 +298,7 @@ int main (int argc, char *argv[]) {
 }
 
 
-/* Tridiagonal solver from Michael */
+/* Tridiagonal solver from Michael Bromley*/
 int tridag(double complex adiag[], double complex alower[], double complex aupper[], double complex rrhs[], double complex xsoln[], int n) {
 	int j;
 	double complex bet, *gam;
