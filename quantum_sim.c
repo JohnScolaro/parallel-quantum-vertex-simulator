@@ -60,9 +60,9 @@ int main (int argc, char *argv[]) {
 	/* Width of initial function */
 	width = 1;
 	/* Initial function. Check the 'func' function to see all options.*/
-	choice = 3;
+	choice = 2;
 	/* The position of the initial function */
-	xinit = 0.6;
+	xinit = 0.0;
 	/* The momentum kick of the initial waveform */
 	k = 0.0;
 	/* Position of the first spacial grid boundary (x_min) */
@@ -72,15 +72,15 @@ int main (int argc, char *argv[]) {
 	/* The number of spacial grid points */
 	Nx = 600;
 	/* Time Step. Simply add (-1 * I) to make it imaginary */
-	dt = -0.03 * I;
+	dt = 0.05;
 	/* Number of time steps */
 	Nt = 200;
 	/* Option to normalize the probability after each time step */
 	normalize = 1;
 	/* Option to force a moving zero in the wavefunction. 0 = no, 1 = yes. */
-	moving = 0;
+	moving = 1;
 	/* Option to change the moving speed */
-	moveSpeed = 0.5;
+	moveSpeed = 0.3;
 	/*
 	 * How often the program prints data. 1 = every time step, 2 = every 2nd,
 	 * etc. This is useful for longer, more precise calculations, as printing
