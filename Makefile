@@ -3,6 +3,8 @@ all:
 
 openmp:
 	gcc quantum_sim.c -o quantum_sim_openmp -lm -std=c99 -fopenmp
+	#for university computers, this may need to be changed to icc in order to
+	#work properly with openmp
 
 phi:
 	icc -qopenmp -O3 -qopt-report=3 -qopt-report-phase=vec -mmic quantum_sim.c -o quantum_sim_phi -lm -std=c99 -ldl -lpthread
